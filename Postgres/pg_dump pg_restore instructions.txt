@@ -1,0 +1,8 @@
+# To dump the database
+pg_dump <dbname> -F tar > /path/to/<dbname>_17_05_2017.dmp
+
+# To load the dump (must run from directory containing the.dmp file)
+pg_restore -Cc < /path/to/<dbname>_17_05_2017.dmp
+
+
+#pg_restore <dbname> --schema=<schema_name> --table=<dump_name >

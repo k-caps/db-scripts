@@ -1,0 +1,36 @@
+﻿after extracting the backup and running postgres from backup
+move the so files to /usr/lib/postgresql/9.5/lib:
+st_geometry.so PGSQLEngine.so libst_raster_pg.so
+
+copy permissions from other files in the same directory
+
+--------------------------------------------------------
+everything under here shoudln't be relevant
+
+#copy the .so files with root user
+
+#to your linux server:
+#/path/to/postgresql/9.5/lib/
+
+#relevant filenames are:
+#st_geometry.so PGSQLEngine.so libst_raster_pg.so
+
+#command is:
+#cp st_geometry.so PGSQLEngine.so libst_raster_pg.so /path/to/postgresql/9.5/lib/
+
+#createuser -s <USERNAME>
+#createdb <DBNAME> -O <USERNAME>
+#postgres=# ALTER USER <USERNAME> WITH PASSWORD 'U123456';
+#postgres=# CREATE SCHEMA <SCHEMANAME>;
+
+#postgres=# \c <username>
+#create extension postgis;
+#create extension postgis_topology;
+
+#create an enterprise GDB:
+#in ArcCatalog
+#create enterprise geodatabase
+
+#grant usage on schema sde to <SCHEMANAME>;
+#grant usage on schema <schemaname> to <username>;
+#grant all on table public.geometry_columns to <username>;

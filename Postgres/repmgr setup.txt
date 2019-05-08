@@ -1,0 +1,130 @@
+# Adding a slave to an existing postgres database
+# Create bidirectional passwordless ssh bewteen the main host and the standby host.
+
+# AS POSTGRES USER ON THE MAIN DATABASE HOST:
+
+# Edit the $PGDATA/postgresql.conf and set the following values or make sure similar values are set:
+listen_addresses = 'localhost, <master_host_ip>'
+wal_level = 'hot_standby'
+max_wal_senders = 10
+wal_keep_segments = 100
+hot_standby = on
+archive_mode = on
+archive_command = 'rsync -a %p /var/lib/postgresql/wal_archives/%f'
+max_replication_slots = 5
+
+# Create the wal directory:
+mkdir -p /var/lib/postgresql/wal_archives/
+
+# Create OS user for the replication:
+createuser -s repmgr
+createdb repmgr -O repmgr
+
+# Make sure repmgr has permissions to connect as replication by adding the following lines to $PGDATA/pg_hba.conf:
+/*
+# You will have to switch 172.17.0.1/32 to whatever IP you have, and end with /32 
+local   replication     repmgr                                trust
+host    replication     repmgr        127.0.0.1/32            trust
+host    replication     repmgr        ::1/128                 trust
+host    replication     repmgr        172.17.0.1/32           trust
+*/
+
+Right below this title
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+add the following lines:
+local   repmgr     repmgr                                trust
+host    repmgr     repmgr        127.0.0.1/32            trust
+host    repmgr     repmgr        ::1/128                 trust
+host    replication     repmgr        IP.ADD.RR.SS/32         trust
+host    repmgr     repmgr        IP.ADD.RR.SS/32         trust
+host    replication     repmgr        IP.ADD.RR.SS/32         trust
+host    repmgr     repmgr        IP.ADD.RR.SS/32         trust
+
+# Restart postgres by finding it's pid in ps -aux and issuing kill command to it
+kill -SIGINT 1
+
+# Now start it again with pg_ctl:
+/path/to/postgresql/9.5/bin/pg_ctl -D /path/to/postgresql/data start
+
+# Now we configure the master by creating file /etc/repmgr.conf and adding the following values:
+	# Replication cluster name - must be identical on all nodes
+	cluster = '<pg_cluster_name>'
+
+	# Unique integer - identifes the node
+	node = 1
+
+	#Unique string - identifying the node
+	node_name = 'node1'
+
+	# Postgresql connection string for the repmgr DB on the current node
+	conninfo = 'host=<master_host_name> user=repmgr dbname=repmgr password=repmgr port=4567'
+
+	# Use replication slots if you enable replication slots in postgresql configuration
+	use_replication_slots = 1
+
+# Change the repmgr database user password (): 
+psql "host=<master_host_name>  user=postgres dbname=repmgr port=4567"
+repmgr=# ALTER USER repmgr WITH PASSWORD 'repmgr';
+repmgr=# \q
+
+# Register the postgres \DB as a master:
+repmgr -f /etc/repmgr.conf master register
+
+# AS POSTGRES USER ON THE SLAVE HOST:
+# Configure the slave by creating file /etc/repmgr.conf and adding the following values:
+	# Replication cluster name - must be identical on all nodes
+	cluster = '<pg_cluster_name>'
+
+	# Unique integer - identifes the node
+	node = 2
+
+	#Unique string - identifying the node
+	node_name = 'node2'
+
+	# Postgresql connection string for the repmgr DB on the current node
+	conninfo = 'host=<slave_host_name> user=repmgr dbname=repmgr password=repmgr port=7654'
+
+	# Use replication slots if you enabled replication slots in postgresql configuration
+	use_replication_slots = 1
+
+# Stop the slave postgres database by issuing kill command to it's pid: (for dockers. you can be nice and use pg_ctl too.)
+kill -SIGINT 7	
+
+# Empty slave pgdata (You can find it by 'echo $PGDATA'):
+rm -r /var/lib/postgresql/data
+
+# Clone the master into the slave:
+repmgr -h ddbasnbx002 -U repmgr -d repmgr -D /path/to/postgresql/data -f /etc/repmgr.conf standby clone
+# Edit the $PGDATA/postgresql.conf and set the following values:
+listen_addresses = 'localhost, <slave_host_ip>'
+
+# Start the slave postgres database:
+/path/to/postgresql/9.5/bin/pg_ctl -D /path/to/postgresql/data start
+
+# Register slave:
+repmgr -f /etc/repmgr.conf standby register
+
+# Connect to the repmgr database to verify all is set up correctly:
+psql "host=<hostname> user=repmgr  dbname=repmgr port=4567"
+select * from repmgr_<pg_cluster_name>.repl_nodes;
+
+# Output should appear as follows:
+ id |  type   | upstream_node_id |     cluster     | name  |                               conninfo                                |   slot_name   | priority | active
+----+---------+------------------+-----------------+-------+-----------------------------------------------------------------------+---------------+----------+--------
+  1 | master  |                  | pg_cluster_name | node1 | host=hostname user=repmgr dbname=repmgr password=repmgr  port=4567    | repmgr_slot_1 |      100 | t
+  2 | standby |                1 | pg_cluster_name | node2 | host=hostname user=repmgr dbname=repmgr password=repmgr  port=7654    | repmgr_slot_2 |      100 | t
+(2 rows)
+
+
+# Failover- from the standby node type
+repmgr standby promote
+
+# If it says it cannot find pg_ctl , run this to create an alias to the pg_ctl file with full path:
+alias pg_ctl="/path/to/postgresql/9.5/bin/pg_ctl
+echo alias pg_ctl="/path/to/postgresql/9.5/bin/pg_ctl" >> ~/.bashrc
+exec bash
+
+# Now you can try failover command again. If it still doesn't work, you can take the command it tries running and run it manually:
+pg_ctl -D /path/to/postgresql/data promote
+
+

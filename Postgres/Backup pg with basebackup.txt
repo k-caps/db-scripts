@@ -1,0 +1,64 @@
+BACKUP:
+
+1.
+Set up host folders:
+mkdir -p /data/pg_backup_<dbname>/wal_archives
+(change <dbname> to the actual name of the database)
+This folder will be a mount to the DB backup server.
+
+2.
+create a volume on the docker (during run command)as follows: 
+
+-v /data/pg_backup_<dbname>:/var/lib/postgresql/backup_location/
+
+3.
+Within the docker, this command will backup the DB along with WALs.
+archive command must be set to dump the archived wals in the same path.
+pg_basebackup --xlog --format=t -D /var/lib/postgresql/backup_location/`date +%Y%m%d`
+
+4.
+In the $PGDATA/postgresql.conf:
+
+Set the following values:
+max_wal_senders = 5
+wal_level = archive
+archive_mode = on
+archive_command = 'rsync -a %p /var/lib/postgresql/backup_location/wal_archives/%f'
+%p - full path to wal file being archived
+%f - name of wal file being archived
+
+If there is no volume, use the ssh option within rsync to dump the archives:
+archive_command = 'rsync -a -e "ssh -p <1234(portnum)> -o BatchMode=yes -o StrictHostKeyChecking=no" %p user@backuphost:/path/on/backup/host/%f'
+-p - port number, necessary  for dockers. 
+
+5. 
+Set the backup command to to run weekly:
+crontab -e
+0 20 * * 5  pg_basebackup --xlog --format=t -D /var/lib/postgresql/backup_location/`date +%Y%m%d` 
+
+If the cron job doesn’t run by itself, make sure the cron is running by typing:
+pgrep cron 
+
+If no number appears, run the following as root user:
+service cron start
+
+Common practice is to put the backup command in a shell script and run the script in the crontab.
+
+If theres no volume, modify the crontab (or script, if the crontab runs one) to run rsync immediately by appending && and then the archive command:
+0 20 * * 5  pg_basebackup --xlog --format=t -D /var/lib/postgresql/backup_location/`date +%Y%m%d` && rsync -a -e "ssh -o BatchMode=yes -o StrictHostKeyChecking=no" /var/lib/postgresql/backup_location/`date +%Y%m%d`/ user@backuphost:/path/on/backup/host/'
+
+
+RECOVERY:
+Simply extract the contents of the base.tar you created, as so: (run from the directory containing base.tar)
+tar -xf base.tar -C /data/pgdata_<dbname>
+
+and create a volume on a new docker on the pgdata folder:
+-v /data/pgdata_<dbname>:/var/lib/postgresql/data/
+
+Point in time recovery:
+Add a new file in the /data/pgdata_<dbname> folder called recovery.conf
+It should contain the following lines:
+
+recovery_target_time = '2017-03-26 10:10:00'
+restore_command = 'cp /backups/wal_archives/%f %p'
+
