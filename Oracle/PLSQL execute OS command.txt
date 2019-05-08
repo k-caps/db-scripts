@@ -1,0 +1,26 @@
+-- Run single command(s):
+begin
+  dbms_scheduler.create_job(
+  job_name=>'DELETE_FILE',
+  job_type=>'executable',
+  job_action=>'/bin/sh',
+  number_of_arguments=>2,
+  );
+  dbms_scheduler.set_job_argument_value('DELETE_FILE',1,'-c');
+  dbms_scheduler.set_job_argument_value('DELETE_FILE',2,'rm /path/to/file.txt');
+  dbms_scheduler.run_job('DELETE_FILE');
+  dbms_scheduler.drop_job('DELETE_FILE');
+end;
+/
+
+-- Run script:
+begin
+  dbms_scheduler.create_job(
+  job_name=>'SOME_SCRIPT_JOB',
+  job_type=>'executable',
+  job_action=>'/path/to/scripts/some_script.sh',
+  enabled=>TRUE,
+  auto_drop=>TRUE
+  );
+end;
+/
