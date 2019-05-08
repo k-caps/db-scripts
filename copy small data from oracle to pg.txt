@@ -1,0 +1,48 @@
+# PREREQUISITES:
+# You must have a table in your postgresl database into which you will pour your data. If it doesn't exist, you must create it. 
+# You can use sqldeveloper's export feature to create the ddl, but you will have to manually edit it to match the postgresql datatypes.
+
+# STEP 1: Export
+# Go into sql developer, execute a query which contains the data you want to transfer to postgres. (eg- select * from data_table)
+# Right click on the results, click export. Pick the following values from the comboboxes: 
+Format - delimited
+Delimter - |
+Encoding - UTF-8
+Single file - pick your file name and location
+
+# Click finish and voila you have a dsv file with all your data.
+
+# STEP 2: Import
+# Copy the resulting dsv file to the postgresql host
+# Run psql, connecting to the DB that contains the table you want to import your data into and run COPY. Syntax is as follows:
+COPY schema.target_table [(columns,separated,by,commas)] FROM '/path/to/export.dsv' DELIMITER '|' CSV HEADER;
+
+# NOTE: If you specify columns, you must add them in the same order as in the dsv file.
+# NOTE: COPY and \COPY do the same thing, except COPY runs on the database server and therefore requires superuser privileges, while /COPY runs client side.
+
+# Example:
+\COPY pg_schema.table_name (col1,col2,col3,col4) FROM 'var/lib/postgresql/data/export.dsv' DELIMITER '|' CSV HEADER;
+
+# For Spatial:
+# When exporting WKT the export process is different, as follows:
+set sqlformat delimited |
+
+# Run your query as a script, not as a statement (f5 instead of ctrl + enter) 
+select column,names,sdo_util.to_wktgeometry(geometry_column) from data_table;
+
+# Copy all output into a utf-8 encoded notepad++ worksheet, save as filename.dsv
+# Make sure there are no empty lines at the end of the file.
+# Continue from here as usual.
+
+# IMPORT
+
+# The postgres datatype for sdo or st_geometry is simply "geometry" or "geography".
+# You must have installed postgis to use these datatypes.
+# The easiest way to transfer geometry values to postgres usuing this method is to export the geometries as WKT, then create select a new table on postgres which converts the WKTs back into workable geometry format.
+# This means you have to create a temporary table to pour your data into, and not use your desired table name on it.
+# The query that creates the final table is as follows:
+create table schema.table_name
+as select COLUMNS,st_GeomFromText(SHAPE_WKT) SHAPE
+from schema.table_name_temp;
+
+
