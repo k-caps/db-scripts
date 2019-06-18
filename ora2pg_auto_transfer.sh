@@ -36,7 +36,7 @@ CURR_TIME=`date '+%X'`
 echo Starting transfer at $CURR_TIME
 
 # The default ora2pg conf file is /etc/ora2pg/ora2pg.conf
-echo "Generating SQL (TYPE = TABLE, No PK set!)"
+echo "Generating SQL (TYPE = TABLE)"
 echo Path: 
 echo "/data/export/$CURR_DATE (inside container)" 
 docker exec -d ora2pg mkdir -p /data/export/$CURR_DATE
