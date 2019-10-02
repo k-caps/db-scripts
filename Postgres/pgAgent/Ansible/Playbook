@@ -1,0 +1,27 @@
+---
+- hosts: database
+  tasks:
+  - name: verify existence of necessary packages
+    yum:
+      name:
+        - pgagent_{{pg_version}}
+        - python-psycopg2.x86_64
+      state: present
+  - name: configure pgagent_service
+    template:
+      src: pgagent.service
+      dest: /etc/systemd/system/pgagent.service
+      owner: root
+      group: root
+      mode: 664
+  - name: create pgagent extension
+    postgresql_ext:
+      name: pgagent
+      db: "{{dbname}}"
+      login_user: "{{userName}}"
+      state: present
+  - name: ensures pgagent daemon running
+    service:
+      name: pgagent
+      state: started
+      enabled: true
