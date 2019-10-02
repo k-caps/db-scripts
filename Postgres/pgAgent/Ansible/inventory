@@ -1,0 +1,7 @@
+[database]
+db-server.com
+
+[all:vars]
+userName=secretname
+databaseName=secretdb
+pg_version=11
