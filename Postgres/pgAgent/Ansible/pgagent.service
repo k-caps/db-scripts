@@ -2,7 +2,7 @@
 Description=Listener for pgAGent (Postgres graphical task scheduler)
 
 [Service]
-ExecStart=/usr/bin/pgagent_11 hostaddr=127.0.0.1 dbname=DBNAME user=USERNAME
+ExecStart=/usr/bin/pgagent_11 hostaddr=127.0.0.1 dbname={{databaseName}} user={{userName}}
 Type=forking
 PIDfile=/var/run/pgagent.pid
 
