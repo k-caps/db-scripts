@@ -41,6 +41,12 @@ select 'ALTER TABLE '||schemaname||'."'||tablename||'" OWNER TO $USER_NAME;'
 FROM information_schema.foreign_tables WHERE NOT foreign_table_schema IN ('pg_catalog','information_schema')
 EOF
 
+# Views
+cat >> $SQLFILE << EOF
+select 'ALTER VIEW '||schemaname||'."'||tablename||'" OWNER TO $USER_NAME;'
+FROM information_schema.tables WHERE table_type ='VIEW' AND NOT table_schema IN ('pg_catalog','information_schema')
+EOF
+
 # Schemas
 cat >> $SQLFILE << EOF
 select 'ALTER SCHEMA "'||schema_name||'" OWNER TO $USER_NAME;'
@@ -65,10 +71,20 @@ EOF
 # Extensions
 cat >> $SQLFILE << EOF
 select 'UPDATE pg_extension SET extowner=(SELECT oid FROM pg_authid WHERE rolname= ''$USER_NAME'') WHERE extname <> ''plpgsql'';'
+UNION ALL
 EOF
-### This is possibly necessary. If you need it, add it after the final query, and replace the ";" with the "union all" ###
-#UNION ALL select 'UPDATE pg_shdepend SET refobjid =(SELECT oid FROM pg_authid WHERE rolname = ''$USER_NAME'')
-#WHERE deptype=''o'' AND refobjid = (SELECT extowner FROM pg_extension WHERE extname <> ''plpgsql'');';
+### This is possibly necessary. If you need it, add it after the extensions query, and replace the ";" with the "union all" ###
+#select 'UPDATE pg_shdepend SET refobjid =(SELECT oid FROM pg_authid WHERE rolname = ''$USER_NAME'')
+#WHERE deptype=''o'' AND refobjid = (SELECT extowner FROM pg_extension WHERE extname <> ''plpgsql'');'
+#UNION ALL
+
+# SQL reassign owned to catch anything that doesn't belong to postgres and that the script missed
+cat >> $SQLFILE << EOF
+select 'REASSIGN OWNED BY "'||rolname||'" TO $USER_NAME;'
+FROM pg_roles WHERE rolname NOT IN ('repmgr','barman','postgres','streaming_barman','splunk-agent')
+AND rolname !~ 'pg_'
+AND rolname <> '$USER_NAME';
+EOF
 
 printf "Ownership changes:\n"
 # Execute change of ownership:
