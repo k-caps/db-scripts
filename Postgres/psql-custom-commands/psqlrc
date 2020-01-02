@@ -7,3 +7,4 @@
 \set kill_all_cluster_connections '\\c postgres \\\\ select pg_terminate_backend(pid) from pg_stat_activity;'
 \set enable_connections '\\c postgres \\echo Enabling connections for DB :_DBNAME \\\\ alter database :_DBNAME with allow_connections = ''true'';'
 \set disable_connections '\\c postgres \\echo Disabling connections for DB :_DBNAME \\\\ alter database :_DBNAME with allow_connections = ''false'';'
+\set show_current_db_size 'select sizedb() as "current_database_size";'
