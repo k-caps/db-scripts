@@ -5,6 +5,7 @@ Once a Postgres cluster has the contents of the provided psqlrc file (saved in ~
 :show_tables_by_size
 :load_schema <schema_name>
 :show_schema_size
+:show_current_db_size
 :kill_all_current_db_connections
 :load_db <db_name>
 :kill_single_db_connections
