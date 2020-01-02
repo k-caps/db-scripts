@@ -75,7 +75,11 @@ You can even edit the logic of any of the commands for the current session as yo
     - pg_catalog
     - cron
     - pgagent
-  - Usage: `:show_tables_by_size`   
+  - Usage: `:show_tables_by_size`  
+  
+- **Command** `show_current_db_size`
+  - Description: Displays the total size of the currently connected database.
+  - Usage: `:show_current_db_size`  
 
 Examples
 ----
