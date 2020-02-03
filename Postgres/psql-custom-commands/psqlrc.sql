@@ -8,3 +8,15 @@
 \set enable_connections '\\c postgres \\echo Enabling connections for DB :_DBNAME \\\\ alter database :_DBNAME with allow_connections = ''true'';'
 \set disable_connections '\\c postgres \\echo Disabling connections for DB :_DBNAME \\\\ alter database :_DBNAME with allow_connections = ''false'';'
 \set show_current_db_size 'select sizedb() as "current_database_size";'
+\set show_number_of_current_connections 'select count(*) as "Currently connected sessions:" from pg_stat_activity;'
+\set QUIET 1
+do $funcs$
+begin
+  begin
+   CREATE OR REPLACE FUNCTION pg_schema_size(text) RETURNS BIGINT AS $$ SELECT SUM(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(tablename)))::BIGINT FROM pg_tables WHERE schemaname = $1 $$ LANGUAGE SQL;
+   CREATE OR REPLACE FUNCTION sizedb() RETURNS text AS $$ SELECT pg_size_pretty(pg_database_size(current_database())); $$ LANGUAGE SQL;
+  exception when duplicate_function then
+    null;
+  end;
+end $funcs$;
+\unset QUIET
