@@ -13,6 +13,7 @@ Once a Postgres cluster has the contents of the provided psqlrc file (saved in ~
 :kill_single_db_connections
 :disable_connections
 :enable_connections
+:show_number_of_current_connections
 ```   
 All commands/shortcuts set here follow the format `:lower_case`. All variables used internally by psql follow the format `:UPPER_CASE`. Variables which this code sets but are not commands follow the format `:_UPPER_CASE`.   
 One-liners, including using psql's native meta-commands (the backslash commands such as `\dx` and `\dt`), are possible using psql's meta-command terminator, `\\`.   
@@ -80,7 +81,12 @@ You can even edit the logic of any of the commands for the current session as yo
 - **Command** `show_current_db_size`
   - Description: Displays the total size of the currently connected database.
   - Usage: `:show_current_db_size`  
-
+  
+- **Command** `show_number_of_current_connections`
+  - Description: Displays the amount of connected sessions.
+  - Usage: `:show_number_of_current_connections`    
+  
+  
 Examples
 ----
 Kill all connections to the database "testdb":
