@@ -1,6 +1,6 @@
 Custom commands in psql
 ----
-The point of this is to make managing databases easier for DBAs and / or sysadmins, who may not know how to use databases very well.   
+The point of this is to make managing databases easier for DBAs and / or sysadmins, who may not know how to use Postgres databases very well.   
 Whether it's checking size on disk, blocking connections, or killing all existing connections on a database, there is a sparkly new command for you to use instead of googling the sql or plpgsql syntax.   
 Once a Postgres cluster has the contents of the provided psqlrc file (saved in ~/.psqlrc) and the provided plpgsql functions  have been run on all databases in the cluster ( you can use `psql -d DBNAME < functions.sql`), the following shortcuts will be available in new psql sessions:   
 ```
