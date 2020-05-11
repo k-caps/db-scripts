@@ -11,7 +11,7 @@ pgcron_$PG_VERSION
 # Changes in postgresql.conf:
 
 #EXTENSIONS
-shared_preload_libraries='repmgr'pg_cron' # repmgr is NOT necessary, it is present to demonstrate multiple libraries..
+shared_preload_libraries='repmgr,pg_cron' # repmgr is NOT necessary, it is present to demonstrate multiple libraries..
 cron.database_name='$DBNAME'
 
 # Add entries to pg_hba.conf:
